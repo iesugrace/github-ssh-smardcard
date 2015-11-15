@@ -1,0 +1,63 @@
+This procedure works on Kubuntu 14.04.3
+
+
+
+1. Connect your card reader, plug in your card, confirm it's ok
+
+    $ gpg --card-status
+
+
+2. Configure gpg agent
+
+    $ echo enable-ssh-support >> ~/.gnupg/gpg-agent.conf
+    $ echo "write-env-file $HOME/.gnupg/.gpg-agent-info" >> ~/.gnupg/gpg-agent.conf
+    $ pkill gpg-agent
+    $ gpg-agent --daemon
+
+
+3. Setup environment variables
+
+    $ echo "source ~/.gnupg/.gpg-agent-info" >> ~/.bashrc
+    $ echo "export GPG_AGENT_INFO" >> ~/.bashrc
+    $ echo "export SSH_AUTH_SOCK" >> ~/.bashrc
+    $ echo "export SSH_AGENT_PID" >> ~/.bashrc
+    $ source ~/.bashrc
+
+    Run the following command, if everything is good,
+    you shall see something like this:
+
+    $ ssh-add -l
+    3072 77:46:1f:c0:74:86:df:95:44:cb:5c:d6:b5:48:eb:01 cardno:00050000ABCD (RSA)
+
+
+4. Fetch and save the public key of the authentication subkey
+
+    Find out the key id of the authentication subkey
+        $ gpg --card-status | awk '/Authentication/{print $(NF-1)$NF}'
+        1DCF4D97
+
+    Fetch that public key
+        $ gpgkey2ssh 1DCF4D97 > /tmp/ssh-pub-key
+
+    Confirm that it's the right key, the fingerprint shall
+        be identical to the output of 'ssh-add -l' command.
+        $ ssh-keygen -lf /tmp/ssh-pub-key 
+        3072 77:46:1f:c0:74:86:df:95:44:cb:5c:d6:b5:48:eb:01  COMMENT (RSA)
+
+    Optionally add some comment to the public
+        $ vi /tmp/ssh-pub-key
+
+
+5. Create an ssh public key on GitHub
+    Go to the topright of the GitHub page, click your icon, then click
+    Settings >> SSH keys >> Add SSH key, paste you public key there and
+    then click "Add key" button. Confirm that the fingerprint of the
+    key on GitHub is identical to your local copy.
+
+
+6. Use. Take an ssh form project address, for example, this one:
+    git@github.com:iesugrace/github-ssh-smardcard.git, and try to clone it:
+
+        $ git clone git@github.com:iesugrace/github-ssh-smardcard.git
+
+    It shall ask you for the unlocking code of your card.
